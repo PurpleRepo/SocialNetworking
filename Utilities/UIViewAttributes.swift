@@ -31,7 +31,7 @@ extension UIView {
         }
     }
     
-    @IBInspectable var viewBordercolor: UIColor {
+    @IBInspectable var viewBorderColor: UIColor {
         get {
             return UIColor(cgColor:layer.borderColor!)
         }

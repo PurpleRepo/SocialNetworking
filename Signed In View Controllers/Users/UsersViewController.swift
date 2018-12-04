@@ -12,6 +12,7 @@ import SVProgressHUD
 class UsersViewController: CustomBaseViewController {
 
     @IBOutlet weak var usersListTableView: UITableView!
+    @IBOutlet weak var usersListSearchBar: UISearchBar!
     
     var dataSource_usersList_original = Array<UserModel>()
     var dataSource_usersList_current = Array<UserModel>()
@@ -21,24 +22,24 @@ class UsersViewController: CustomBaseViewController {
 
         title = "Users"
         
+//        usersListSearchBar.barTintColor = (UIColor.clear)
+//        usersListSearchBar.backgroundImage = nil
+        
         SVProgressHUD.show(withStatus: "Loading Users List")
-        DispatchQueue.global().async {
-            
-            DatabaseHandler.shared.fetchUserList(){
-                (userModelArray) in
-                if var unwrappedUserModelArray = userModelArray {
-                    unwrappedUserModelArray.removeAll(where: { $0.id == UserLoggingHandler.shared.currentUser?.id })
-                    self.dataSource_usersList_original = unwrappedUserModelArray
-                    self.dataSource_usersList_current = self.dataSource_usersList_original
-                    
-                    DispatchQueue.main.async {
-                        self.usersListTableView.reloadData()
-                        SVProgressHUD.dismiss()
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        SVProgressHUD.dismiss()
-                    }
+        FirebaseAPIHandler.shared.fetchAllUsers(){
+            (userModelArray) in
+            if var unwrappedUserModelArray = userModelArray {
+                unwrappedUserModelArray.removeAll(where: { $0.id == FirebaseAPIHandler.shared.currentUser?.id })
+                self.dataSource_usersList_original = unwrappedUserModelArray
+                self.dataSource_usersList_current = self.dataSource_usersList_original
+                
+                DispatchQueue.main.async {
+                    self.usersListTableView.reloadData()
+                    SVProgressHUD.dismiss()
+                }
+            } else {
+                DispatchQueue.main.async {
+                    SVProgressHUD.dismiss()
                 }
             }
         }
@@ -56,7 +57,7 @@ class UsersViewController: CustomBaseViewController {
 extension UsersViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        print(dataSource_usersList_current.count)
+        //print(dataSource_usersList_current.count)
         return dataSource_usersList_current.count
     }
     
@@ -82,8 +83,8 @@ extension UsersViewController: UITableViewDataSource, UITableViewDelegate {
     @objc func friendButtonPressed(sender: UIButton)
     {
         print("Pressed friend request button!")
-        if let currentUserID = UserLoggingHandler.shared.currentUser?.id {
-            DatabaseHandler.shared.addFriend(for: currentUserID, friendID: dataSource_usersList_current[sender.tag].id)
+        if let currentUserID = FirebaseAPIHandler.shared.currentUser?.id {
+            FirebaseAPIHandler.shared.addFriend(for: currentUserID, friendID: dataSource_usersList_current[sender.tag].id)
             {
                 (success) in
                 // TODO: Must finish!

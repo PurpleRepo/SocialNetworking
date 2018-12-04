@@ -23,21 +23,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
         FirebaseApp.configure()
         
         Fabric.with([Crashlytics.self])
-        // TODO: Move this to where you establish a user session
-        self.logUser()
         
         GIDSignIn.sharedInstance().clientID = FirebaseApp.app()?.options.clientID
         FBSDKApplicationDelegate.sharedInstance()?.application(application, didFinishLaunchingWithOptions: launchOptions)
         
         GMSServices.provideAPIKey(googleMapsAPIKey)
         
-        // Throws the User into the HomeViewController if they are still logged in.
-        if Auth.auth().currentUser != nil {
-            // initialize FirebaseAPI
+        if FirebaseAPIHandler.shared.currentUser != nil {
             let mainStoryboard : UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
             let controller = mainStoryboard.instantiateViewController(withIdentifier: "TabBarController")
             self.window?.rootViewController = controller
@@ -56,13 +51,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return googlehandler||facebookDidHandle
     }
     
-    func logUser() {
-        // TODO: Use the current user's information
-        // You can call any combination of these three methods
-        Crashlytics.sharedInstance().setUserEmail("user@fabric.io")
-        Crashlytics.sharedInstance().setUserIdentifier("12345")
-        Crashlytics.sharedInstance().setUserName("Test User")
-    }
 
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -73,7 +61,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-        UserLoggingHandler.shared.signOut()
+//        FirebaseAPIHandler.shared.signOut()
     }
 
     func applicationWillEnterForeground(_ application: UIApplication) {
@@ -86,7 +74,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
-        UserLoggingHandler.shared.signOut()
+//        FirebaseAPIHandler.shared.signOut()
         /* try? Auth.auth().signOut()
         GIDSignIn.sharedInstance()?.signOut()
         print("Signed out.") // */

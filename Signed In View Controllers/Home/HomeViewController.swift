@@ -13,13 +13,19 @@ class HomeViewController: CustomBaseViewController {
     @IBOutlet weak var profileImageView: UIImageView!
     @IBOutlet weak var userNameLabel: UILabel!
     
+    @IBOutlet weak var postsListTableView: UITableView!
+    
+    var tableView_dataSource_posts = Array<UserPost>()
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        UserLoggingHandler.shared.delegates.append(self)
+        NotificationCenter.default.addObserver(self, selector: #selector(profileChanged), name: FirebaseAPIHandler.shared.userProfileChangeNotification, object: nil)
+        profileChanged()
         
-        profileImageView.image = UserLoggingHandler.shared.currentUser?.profileImage ?? UIImage(named: "defaultProfileImage")
-        userNameLabel.text = "Welcome, \(UserLoggingHandler.shared.currentUser?.fullName ?? "User")!"
+        // retrieve posts by all users / friends
+        
+        //DispatchQueue.global(qos)
     }
     
     override func viewDidLoad() {
@@ -29,12 +35,30 @@ class HomeViewController: CustomBaseViewController {
         
         profileImageView.viewCorner = profileImageView.frame.height * 0.6
     }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func profileChanged() {
+        DispatchQueue.main.async {
+            self.profileImageView.image = FirebaseAPIHandler.shared.currentUser?.profileImage ?? UIImage(named: "defaultProfileImage")
+            self.userNameLabel.text = "Welcome, \(FirebaseAPIHandler.shared.currentUser?.fullName ?? "User")!"
+        }
+    }
 }
 
-extension HomeViewController: UserProfileChangeDelegate {
+extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
     
-    func profileChanged() {
-        profileImageView.image = UserLoggingHandler.shared.currentUser?.profileImage ?? UIImage(named: "defaultProfileImage")
-        userNameLabel.text = "Welcome, \(UserLoggingHandler.shared.currentUser?.fullName ?? "User")!"
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return tableView_dataSource_posts.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "PostTableViewCell") as! PostTableViewCell
+        
+        
+        
+        return cell
     }
 }

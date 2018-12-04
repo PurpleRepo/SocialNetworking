@@ -14,7 +14,7 @@ enum ImageType {
     case customImage
 }
 
-class UserModel {
+struct UserModel {
     
     var id: String
     var loginType: String?
@@ -45,16 +45,6 @@ class UserModel {
         let coordinatesArray = coordinates.components(separatedBy: CharacterSet(charactersIn: ",")).compactMap({
             Double($0)
         })
-        
-        // TEMPORARY FIX
-//        print("Coordinates Array Count: \(coordinatesArray.count)")
-//        if coordinatesArray.count == 0 {
-//            latitude = 37.4220
-//            longitude = -122.0841
-//        } else {
-//            
-//        }
-        
         latitude = coordinatesArray[0]
         longitude = coordinatesArray[1]
     }

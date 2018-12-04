@@ -8,17 +8,38 @@
 
 import UIKit
 import SVProgressHUD
+import TWMessageBarManager
 
 class UpdateProfileViewController: UIViewController {
 
     @IBOutlet weak var profileImageView: UIImageView!
+    @IBOutlet weak var profileEmailTextField: UITextField!
+    @IBOutlet weak var profileFullNameTextField: UITextField!
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(profileChanged), name: FirebaseAPIHandler.shared.userProfileChangeNotification, object: nil)
+        profileChanged()
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         profileImageView.viewCorner = profileImageView.frame.height * 0.6
         
-        profileImageView.image = UserLoggingHandler.shared.currentUser?.profileImage ?? UIImage(named: "defaultProfileImage")
+        profileImageView.image = FirebaseAPIHandler.shared.currentUser?.profileImage ?? UIImage(named: "defaultProfileImage")
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func profileChanged() {
+        DispatchQueue.main.async {
+            self.profileImageView.image = FirebaseAPIHandler.shared.currentUser?.profileImage ?? UIImage(named: "defaultProfileImage")
+            self.profileFullNameTextField.text = FirebaseAPIHandler.shared.currentUser?.fullName ?? "User"
+        }
     }
     
     @IBAction func chooseImageButtonPressed()
@@ -30,14 +51,20 @@ class UpdateProfileViewController: UIViewController {
     
     @IBAction func saveButtonPressed()
     {
-//        MBProgressHUD.showAdded(to: view, animated: true)
-        SVProgressHUD.show(withStatus: "Saving Changes")
-        StorageHandler.shared.updateImage(folder: StorageHandler.shared.folders.userImageFolder, id: (UserLoggingHandler.shared.currentUser?.id)!, replacement: profileImageView.image ?? UIImage(named: "defaultProfileImage")!)
-        {
-            (success) in
-//            MBProgressHUD.hide(for: self.view, animated: true)
-            SVProgressHUD.dismiss()
-            UserLoggingHandler.shared.currentUser?.profileImage = self.profileImageView.image
+        if var temporaryUserModel = FirebaseAPIHandler.shared.currentUser, let newName = profileFullNameTextField.text {
+            if temporaryUserModel.fullName != newName || temporaryUserModel.profileImage != profileImageView.image {
+                SVProgressHUD.show(withStatus: "Saving Changes")
+                temporaryUserModel.fullName = newName
+                temporaryUserModel.profileImage = profileImageView.image
+                FirebaseAPIHandler.shared.updateUserProfile(userModel: temporaryUserModel)
+                {
+                    () in
+                    DispatchQueue.main.async {
+                        TWMessageBarManager.sharedInstance().showMessage(withTitle: "Success", description: "Updated Profile!", type: .success)
+                        SVProgressHUD.dismiss()
+                    }
+                }
+            }
         }
     }
 }
@@ -46,12 +73,9 @@ extension UpdateProfileViewController: UIImagePickerControllerDelegate, UINaviga
     
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         let image = info[UIImagePickerController.InfoKey.originalImage] as! UIImage
-        profileImageView.image = image
-        /*StorageHandler.shared.updateImage(replacement: image)
-        {
-            (success) in
-            UserLoggingHandler.shared.currentUser?.profileImage = image
-        } // */
+        DispatchQueue.main.async {
+            self.profileImageView.image = image
+        }
         picker.dismiss(animated: true, completion: nil)
     }
     

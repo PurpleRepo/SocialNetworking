@@ -31,16 +31,12 @@ class SignInViewController: CustomBaseViewController, GIDSignInDelegate, GIDSign
     override func viewDidLoad()
     {
         super.viewDidLoad()
-        
         accountNameTextField?.becomeFirstResponder()
         title = "Sign In"
-        
         GIDSignIn.sharedInstance().uiDelegate = self
         GIDSignIn.sharedInstance()?.delegate = self
-        
         facebookLoginButton.delegate = self
         facebookLoginButton.readPermissions = ["public_profile", "email"]
-        
         let tapper = UITapGestureRecognizer(target: self, action:#selector(hideKeyboard))
         tapper.cancelsTouchesInView = false
         view.addGestureRecognizer(tapper)
@@ -57,8 +53,7 @@ class SignInViewController: CustomBaseViewController, GIDSignInDelegate, GIDSign
         }
         guard let authentication = user.authentication else { return }
         let credential = GoogleAuthProvider.credential(withIDToken: authentication.idToken, accessToken: authentication.accessToken)
-        
-        UserLoggingHandler.shared.signIn(with: credential)
+        FirebaseAPIHandler.shared.signIn(with: credential)
         {
             (success) in
             DispatchQueue.main.async {
@@ -74,7 +69,6 @@ class SignInViewController: CustomBaseViewController, GIDSignInDelegate, GIDSign
     // MARK: Facebook Sign-In
     func loginButton(_ loginButton: FBSDKLoginButton!, didCompleteWith result: FBSDKLoginManagerLoginResult!, error: Error!) {
         SVProgressHUD.show(withStatus: "Signing In")
-        
         if let error = error {
             //print(error.localizedDescription)
             DispatchQueue.main.async {
@@ -93,7 +87,6 @@ class SignInViewController: CustomBaseViewController, GIDSignInDelegate, GIDSign
         FBSDKGraphRequest(graphPath: "me", parameters: ["fields" : "id,name,birthday,email,first_name,last_name,middle_name,picture.width(4096).height(4096)"])?.start(completionHandler:
         {
             (connection, result, error) in
-            
             if error != nil {
                 DispatchQueue.main.async {
                     SVProgressHUD.dismiss()
@@ -105,15 +98,15 @@ class SignInViewController: CustomBaseViewController, GIDSignInDelegate, GIDSign
                     attributes["last_name"] = values["last_name"]
                     attributes["first_name"] = values["first_name"]
                     attributes["email"] = values["email"]
-                    print("Facebook attributes: \(attributes)")
+//                    print("Facebook attributes: \(attributes)")
                 }
             }
         })
-        Auth.auth().signInAndRetrieveData(with: credential)
+        FirebaseAPIHandler.shared.signIn(with: credential)
         {
-            (authResult, error) in
+            (success) in
             DispatchQueue.main.async {
-                if error == nil {
+                if success {
                     self.performSegue(withIdentifier: "SignInSegue", sender: self)
                 }
             }
@@ -129,9 +122,9 @@ class SignInViewController: CustomBaseViewController, GIDSignInDelegate, GIDSign
     // UserLoggingHandler employs an escaping closure so we can perform a segue and clear the password field on success.
     func signIn(email: String, password: String){
         SVProgressHUD.show(withStatus: "Signing In")
-        UserLoggingHandler.shared.signIn(email: email, password: password) {
-            (error) in
-            if error == nil {
+        FirebaseAPIHandler.shared.signIn(email: email, password: password) {
+            (success) in
+            if success == true {
                 DispatchQueue.main.async {
                     self.accountPasswordTextField?.text = ""
                     SVProgressHUD.dismiss()

@@ -14,29 +14,36 @@ class SettingsViewController: CustomBaseViewController {
 
     @IBOutlet weak var profileImageView: UIImageView!
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(profileChanged), name: FirebaseAPIHandler.shared.userProfileChangeNotification, object: nil)
+        profileChanged()
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
         title = "Settings"
         
         profileImageView.viewCorner = profileImageView.frame.height * 0.6
-        
-        UserLoggingHandler.shared.delegates.append(self)
-        profileImageView.image = UserLoggingHandler.shared.currentUser?.profileImage ?? UIImage(named: "defaultProfileImage")
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
     
     @IBAction func logOutButtonPressed()
     {
-        UserLoggingHandler.shared.signOut()
+        FirebaseAPIHandler.shared.signOut()
         if let controller = storyboard?.instantiateViewController(withIdentifier: "EntryPointNavigationController") as? UINavigationController {
             navigationController?.present(controller, animated: false)
         }
     }
-}
-
-extension SettingsViewController: UserProfileChangeDelegate {
     
-    func profileChanged() {
-        profileImageView.image = UserLoggingHandler.shared.currentUser?.profileImage ?? UIImage(named: "defaultProfileImage")
+    @objc func profileChanged() {
+        DispatchQueue.main.async {
+            self.profileImageView.image = FirebaseAPIHandler.shared.currentUser?.profileImage ?? UIImage(named: "defaultProfileImage")
+        }
     }
 }

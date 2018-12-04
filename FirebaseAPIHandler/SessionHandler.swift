@@ -10,40 +10,28 @@ import Foundation
 import UIKit
 import FirebaseAuth
 import TWMessageBarManager
+import Crashlytics
 
 extension FirebaseAPIHandler {
     
-    func signUp(email: String, password: String, fullName: String, profileImage: UIImage?, coordinates: String, completion: @escaping (Bool) -> ())
+    // TODO: Need to include storing storage references
+    func signIn(email: String, password: String, completion: @escaping (Bool) -> ())
     {
-        // Use DispatchGroup here
-        // Escaping Closure / Callback
-        Auth.auth().createUser(withEmail: email, password: password)
+        Auth.auth().signIn(withEmail: email, password: password)
         {
-            (authResult, error) in
+            (result, error) in
             if error == nil {
-                guard let user = authResult?.user else { return }
-                TWMessageBarManager.sharedInstance().showMessage(withTitle: "Success", description: "Account succesfully created!", type: .success)
-                // Escaping Closure / Callback
-                self.databaseReference.child("USERS").child(user.uid).setValue(["FullName": fullName, "EmailId": email, "Coordinates": coordinates])
+                guard let user = result?.user else {
+                    completion(false)
+                    return
+                }
+                FirebaseAPIHandler.shared.fetchUser(userID: user.uid)
                 {
-                    (error, ref) in
-                    if error == nil {
-                        // Escaping Closure / Callback
-                        if profileImage != nil {
-                            StorageHandler.shared.uploadImage(folder: StorageHandler.shared.folders.userImageFolder, id: user.uid, image: profileImage!)
-                            {
-                                (success) in
-                                // Escaping Closure / Callback (to Main Queue)
-                                self.currentUser = UserModel(id: user.uid, email: email, fullName: fullName, profileImage: profileImage, coordinates: coordinates)
-                                completion(true)
-                            }
-                        } else {
-                            self.currentUser = UserModel(id: user.uid, email: email, fullName: fullName, profileImage: profileImage, coordinates: coordinates)
-                            completion(true)
-                        }
-                    } else {
-                        completion(false)
-                    }
+                    (userModel) in
+                    self.currentUser = userModel
+                    self.logUser()
+                    TWMessageBarManager.sharedInstance().showMessage(withTitle: "Success", description: "Successfully signed in!", type: .success)
+                    completion(true)
                 }
             } else {
                 TWMessageBarManager.sharedInstance().showMessage(withTitle: "Error", description: error?.localizedDescription, type: .error)
@@ -52,28 +40,7 @@ extension FirebaseAPIHandler {
         }
     }
     
-    // TODO: Need to include storing storage references
-    func signIn(email: String, password: String, completion: @escaping (Error?) -> ())
-    {
-        Auth.auth().signIn(withEmail: email, password: password)
-        {
-            (result, error) in
-            if error == nil {
-                guard let user = result?.user else { return }
-                StorageHandler.shared.pullImage(folder: StorageHandler.shared.folders.userImageFolder, id: user.uid)
-                {
-                    (image) in
-                    // TODO: MUST BE FIXED TO PULL FROM STORAGE
-                    self.currentUser = UserModel(id: user.uid, email: user.email, fullName: user.displayName, profileImage: image, coordinates: "")
-                    TWMessageBarManager.sharedInstance().showMessage(withTitle: "Success", description: "Successfully signed in!", type: .success)
-                    completion(nil)
-                }
-            } else {
-                TWMessageBarManager.sharedInstance().showMessage(withTitle: "Error", description: error?.localizedDescription, type: .error)
-                completion(error)
-            }
-        }
-    }
+    // Google & Facebook Sign In
     func signIn(with credential: AuthCredential, completion: @escaping (Bool) -> ())
     {
         Auth.auth().signInAndRetrieveData(with: credential)
@@ -81,11 +48,11 @@ extension FirebaseAPIHandler {
             (authResult, error) in
             if error == nil {
                 guard let user = authResult?.user else { return }
-                StorageHandler.shared.pullImage(folder: StorageHandler.shared.folders.userImageFolder, id: user.uid)
+                FirebaseAPIHandler.shared.fetchUser(userID: user.uid)
                 {
-                    (image) in
-                    // TODO: MUST BE FIXED, PULL FROM STORAGE (DATABASE)
-                    self.currentUser = UserModel(id: user.uid, email: user.email, fullName: user.displayName, profileImage: image, coordinates: "")
+                    (userModel) in
+                    self.currentUser = userModel
+                    self.logUser()
                     TWMessageBarManager.sharedInstance().showMessage(withTitle: "Success", description: "Successfully signed in!", type: .success)
                     completion(true)
                 }
@@ -100,10 +67,9 @@ extension FirebaseAPIHandler {
         try? Auth.auth().signOut()
     }
     
-    func updateCurrentUserModels()
-    {
-//        for delegate in delegates {
-//            delegate.profileChanged()
-//        }
+    func logUser() {
+        Crashlytics.sharedInstance().setUserEmail(currentUser?.email)
+        Crashlytics.sharedInstance().setUserIdentifier(currentUser?.id)
+        Crashlytics.sharedInstance().setUserName(currentUser?.fullName)
     }
 }

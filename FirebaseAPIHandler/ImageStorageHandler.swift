@@ -49,8 +49,8 @@ extension FirebaseAPIHandler {
         self.uploadImage(folder: folder, id: id, image: replacement)
         {
             (success) in
-            UserLoggingHandler.shared.currentUser?.profileImage = replacement
-            UserLoggingHandler.shared.updateCurrentUserModels()
+            self.currentUser?.profileImage = replacement
+            self.updateCurrentUserModelReferences()
             completion(success)
         }
     }

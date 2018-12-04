@@ -11,10 +11,6 @@ import FirebaseAuth
 import FirebaseDatabase
 import FirebaseStorage
 
-protocol UserProfileChangeDelegate {
-    func profileChanged()
-}
-
 class FirebaseAPIHandler {
     
     static let shared = FirebaseAPIHandler()
@@ -27,45 +23,31 @@ class FirebaseAPIHandler {
     static let storageFolders = (userImagesFolder: "USERIMAGES",
                                  postImagesFolder: "POSTIMAGES")
     
+    var userProfileChangeNotification = Notification.Name.init("UserProfileChange")
+    
     var currentUser: UserModel?
     
-    var userProfileChangeDelegates = Array<UserProfileChangeDelegate>()
-    
-    private init(){
+    private init()
+    {
         databaseReference = Database.database().reference()
         storageReference = Storage.storage().reference()
         
-        if let user = Auth.auth().currentUser {
-            
-            let pullingUserModel = DispatchGroup()
-            
-            // TODO TEMPORARY FIX - MUST IMPLEMENT THE FETCHUSER
-            currentUser = UserModel(id: user.uid, email: user.email, fullName: user.displayName, profileImage: nil, coordinates: "")
-//            pullingUserModel.enter()
-//            fetchUser(userID: user.uid)
-//            {
-//                (userModel) in
-//                self.currentUser = userModel
-//                pullingUserModel.leave()
-//            }
-            
-            var profileImage: UIImage?
-            pullingUserModel.enter()
-            fetchImage(folder: FirebaseAPIHandler.storageFolders.userImagesFolder, id: user.uid)
+        if let user = Auth.auth().currentUser { // make a barrier for this
+            fetchUser(userID: user.uid)
             {
-                (image) in
-                profileImage = image
-                pullingUserModel.leave()
-            }
-            
-            pullingUserModel.notify(queue: .main)
-            {
-                self.currentUser?.profileImage = profileImage
-                if profileImage != nil {
-                    self.currentUser?.profileImageType = ImageType.customImage
+                (userModel) in
+                objc_sync_enter(self.currentUser as Any)
+                self.currentUser = userModel
+                objc_sync_exit(self.currentUser as Any)
+                DispatchQueue.main.async {
+                    self.updateCurrentUserModelReferences()
                 }
-                self.updateCurrentUserModels()
             }
         }
+    }
+    
+    func updateCurrentUserModelReferences()
+    {
+        NotificationCenter.default.post(name: userProfileChangeNotification, object: currentUser)
     }
 }

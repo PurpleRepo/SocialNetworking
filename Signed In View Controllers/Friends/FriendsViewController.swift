@@ -12,6 +12,7 @@ import SVProgressHUD
 class FriendsViewController: CustomBaseViewController {
 
     @IBOutlet weak var friendsListTableView: UITableView!
+    @IBOutlet weak var friendsListSearchBar: UISearchBar!
     
     var dataSource_friendsList_original = Array<UserModel>()
     var dataSource_friendsList_current = Array<UserModel>()
@@ -21,18 +22,27 @@ class FriendsViewController: CustomBaseViewController {
         
         title = "Friends"
         
+//        friendsListSearchBar.barTintColor = UIColor.clear
+//        friendsListSearchBar.backgroundImage = nil
+//        friendsListSearchBar.setBackgroundImage(nil, for: UIBarPosition.any, barMetrics: UIBarMetrics.default)
+        
         SVProgressHUD.show(withStatus: "Loading Friends List")
-//        MBProgressHUD.showAdded(to: view, animated: true)
         // load data
-        DispatchQueue.global().async {
-            
-            // dataSource_usersList_original = ...
-            self.dataSource_friendsList_current = self.dataSource_friendsList_original
-            
-            DispatchQueue.main.async {
-                self.friendsListTableView.reloadData()
-//                MBProgressHUD.hide(for: self.view, animated: true)
-                SVProgressHUD.dismiss()
+        FirebaseAPIHandler.shared.fetchAllUsers(){
+            (userModelArray) in
+            if var unwrappedUserModelArray = userModelArray {
+                unwrappedUserModelArray.removeAll(where: { $0.id == FirebaseAPIHandler.shared.currentUser?.id })
+                self.dataSource_friendsList_original = unwrappedUserModelArray
+                self.dataSource_friendsList_current = self.dataSource_friendsList_original
+                
+                DispatchQueue.main.async {
+                    self.friendsListTableView.reloadData()
+                    SVProgressHUD.dismiss()
+                }
+            } else {
+                DispatchQueue.main.async {
+                    SVProgressHUD.dismiss()
+                }
             }
         }
     }

@@ -16,7 +16,7 @@ import SVProgressHUD
 
 class SignUpViewController: CustomBaseViewController, CLLocationManagerDelegate {
 
-    @IBOutlet weak var profileImageView: UIImageView!
+    @IBOutlet weak var profileImageView: ProfileImageTemplate!
     @IBOutlet weak var accountNameTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
     @IBOutlet weak var fullNameTextField: UITextField!
@@ -40,7 +40,7 @@ class SignUpViewController: CustomBaseViewController, CLLocationManagerDelegate 
         locationManager.distanceFilter = 30 // in meters
         
         
-        profileImageView.viewCorner = profileImageView.frame.height * 0.6
+        //profileImageView.viewCorner = profileImageView.frame.height * 0.6
         
         let tapper = UITapGestureRecognizer(target: self, action:#selector(hideKeyboard))
         tapper.cancelsTouchesInView = false
@@ -95,7 +95,7 @@ class SignUpViewController: CustomBaseViewController, CLLocationManagerDelegate 
                 let longitude = String(format: "%f", self.locationManager.location?.coordinate.longitude ?? -122.0841)
                 let coordinates = "\(latitude),\(longitude)"
                 
-                UserLoggingHandler.shared.signUp(email: email, password: password, fullName: fullName, profileImage: profileImage, coordinates: coordinates)
+                FirebaseAPIHandler.shared.signUp(email: email, password: password, fullName: fullName, profileImage: profileImage, coordinates: coordinates)
                 {
                     (success) in
                     DispatchQueue.main.async {
